@@ -61,6 +61,18 @@ void TesseractCompoundCollisionAlgorithm::preallocateChildAlgorithms(const btCol
 
   const auto* compoundShape = static_cast<const btCompoundShape*>(colObjWrap->getCollisionShape());
 
+  // z404 : compound contre compound, tous deux avec arbre de boites. L'algorithme compound-compound
+  // range ses algorithmes enfants dans sa propre table de paires et ne lit jamais ce tableau ; il
+  // aurait une case par enfant, soit une par triangle pour un maillage (4,3 Mo par paire pour
+  // 541 308 triangles). Il reste vide.
+  const btCollisionShape* otherShape = otherObjWrap->getCollisionShape();
+  if (compoundShape->getDynamicAabbTree() != nullptr && otherShape->isCompound() &&
+      static_cast<const btCompoundShape*>(otherShape)->getDynamicAabbTree() != nullptr)
+  {
+    m_childCollisionAlgorithms.clear();
+    return;
+  }
+
   int numChildren = compoundShape->getNumChildShapes();
 
   m_childCollisionAlgorithms.resize(numChildren);
